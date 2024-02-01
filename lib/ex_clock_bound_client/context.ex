@@ -1,4 +1,5 @@
 defmodule ExClockBoundClient.Context do
+  @moduledoc false
   def start_socket(opts) do
     with {:ok, socket} <-
            :gen_udp.open(0, [

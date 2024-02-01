@@ -1,4 +1,5 @@
 defmodule ExClockBoundClient.Server do
+  @moduledoc false
   use GenServer
 
   alias ExClockBoundClient.Context
