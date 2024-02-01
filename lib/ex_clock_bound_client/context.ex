@@ -44,38 +44,6 @@ defmodule ExClockBoundClient.Context do
     end
   end
 
-  def timing(func, opts) do
-    request_data = <<1, 1, 0, 0>>
-
-    with {:ok, <<1, 1, 0, 0, earliest_start::binary-size(8), latest_start::binary-size(8)>>} <-
-           request(request_data, 20, opts),
-         _ <- func.(),
-         {:ok, <<1, 1, 0, 0, earliest_finish::binary-size(8), latest_finish::binary-size(8)>>} <-
-           request(request_data, 20, opts) do
-      earliest_start = :binary.decode_unsigned(earliest_start)
-      latest_start = :binary.decode_unsigned(latest_start)
-      earliest_finish = :binary.decode_unsigned(earliest_finish)
-      latest_finish = :binary.decode_unsigned(latest_finish)
-
-      start_midpoint = (earliest_start + latest_start) / 2
-      end_midpoint = (earliest_finish + latest_finish) / 2
-
-      execution_time = end_midpoint - start_midpoint
-
-      error_rate = execution_time * opts[:frequency_error] / 1_000_000
-
-      min_execution_time = (execution_time - error_rate) |> ceil()
-      max_execution_time = (execution_time + error_rate) |> ceil()
-      earliest_start = DateTime.from_unix!(earliest_start, :nanosecond)
-      latest_finish = DateTime.from_unix!(latest_finish, :nanosecond)
-
-      {:ok, {{earliest_start, latest_finish}, {min_execution_time, max_execution_time}}}
-    else
-      {:ok, <<1, 0, _rest::binary>>} -> {:error, :clock_bound_server_error}
-      err -> err
-    end
-  end
-
   def deviation(opts) do
     request_data = <<1, 1, 0, 0>>
 
