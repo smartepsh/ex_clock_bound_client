@@ -41,7 +41,14 @@ defmodule ExClockBoundClient do
           {:ok,
            {{earliest_start :: DateTime.t(), latest_finish :: DateTime.t()},
             {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}}}
-          | {:error, :clock_bound_server_error}
+          | {:error, :clock_bound_server_error | :timeout}
+          | {:error, :raise | :throw, inspection :: String.t()}
+  @spec timing(function(), opts :: keyword) ::
+          {:ok,
+           {{earliest_start :: DateTime.t(), latest_finish :: DateTime.t()},
+            {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}}}
+          | {:error, :clock_bound_server_error | :timeout}
+          | {:error, :raise | :throw, inspection :: String.t()}
   def timing(func, opts \\ [exec_timeout: 5000]) do
     with {:ok, {earliest_start_datetime, latest_start_datetime}} <- now(),
          {:ok, _} <- run_function_in_task(func, opts[:exec_timeout]),
@@ -74,6 +81,8 @@ defmodule ExClockBoundClient do
             func.()
           rescue
             exception -> {:error, :raise, inspect(exception)}
+          catch
+            anything -> {:error, :throw, inspect(anything)}
           end
         end)
 
