@@ -67,7 +67,9 @@ defmodule ExClockBoundClient do
     [
       clock_bound_socket_path: "/run/clockboundd/clockboundd.sock",
       client_socket_path: Path.expand("./client.sock"),
-      recv_timeout: 100
+      recv_timeout: 100,
+      # 1 ppm for chrony
+      frequency_error: 1
     ]
   end
 end
