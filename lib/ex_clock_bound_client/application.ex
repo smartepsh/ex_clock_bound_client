@@ -10,6 +10,7 @@ defmodule ExClockBoundClient.Application do
     children = [
       # Starts a worker by calling: ExClockBoundClient.Worker.start_link(arg)
       # {ExClockBoundClient.Worker, arg}
+      {ExClockBoundClient.Server, ExClockBoundClient.config()}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
