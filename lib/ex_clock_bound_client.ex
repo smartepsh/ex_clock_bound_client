@@ -20,7 +20,7 @@ defmodule ExClockBoundClient do
   """
   @spec now() ::
           {:ok, {earliest_datetime :: DateTime.t(), latest_datetime :: DateTime.t()}}
-          | {:error, term}
+          | {:error, :clock_bound_server_error}
   def now do
     GenServer.call(Server, :now)
   end
@@ -41,7 +41,7 @@ defmodule ExClockBoundClient do
           {:ok,
            {{earliest_start :: DateTime.t(), latest_finish :: DateTime.t()},
             {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}}}
-          | {:error, term}
+          | {:error, :clock_bound_server_error}
   def timing(func, opts \\ [exec_timeout: 5000]) do
     with {:ok, {earliest_start_datetime, latest_start_datetime}} <- now(),
          {:ok, _} <- run_function_in_task(func, opts[:exec_timeout]),
@@ -91,7 +91,7 @@ defmodule ExClockBoundClient do
       iex> ExClockBoundClient.deviation()
       {:ok, 1314}
   """
-  @spec deviation() :: {:ok, nanosecond()} | {:error, term}
+  @spec deviation() :: {:ok, nanosecond()} | {:error, :clock_bound_server_error}
   def deviation do
     GenServer.call(Server, :deviation)
   end
@@ -108,7 +108,8 @@ defmodule ExClockBoundClient do
       iex> ExClockBoundClient.before?(~U[2024-02-01 11:14:57.656524Z])
       {:ok, true}
   """
-  @spec before?(DateTime.t() | unix_time_with_unit()) :: {:ok, boolean} | {:error, term}
+  @spec before?(DateTime.t() | unix_time_with_unit()) ::
+          {:ok, boolean} | {:error, :clock_bound_server_error | :invalid_datetime}
   def before?(datetime) do
     with {:ok, datetime} <- normalize_datetime(datetime) do
       GenServer.call(Server, {:before?, datetime})
@@ -129,7 +130,8 @@ defmodule ExClockBoundClient do
       iex> ExClockBoundClient.before?(~U[2024-02-01 11:14:57.656524Z])
       {:ok, true}
   """
-  @spec after?(DateTime.t() | unix_time_with_unit()) :: {:ok, boolean} | {:error, term}
+  @spec after?(DateTime.t() | unix_time_with_unit()) ::
+          {:ok, boolean} | {:error, :clock_bound_server_error | :invalid_datetime}
   def after?(datetime) do
     with {:ok, datetime} <- normalize_datetime(datetime) do
       GenServer.call(Server, {:after?, datetime})
@@ -141,7 +143,7 @@ defmodule ExClockBoundClient do
          {:ok, _datetime} <- DateTime.from_unix(unix_nanosecond, :nanosecond) do
       {:ok, unix_nanosecond}
     else
-      _ -> {:error, :invliad_datetime}
+      _ -> {:error, :invalid_datetime}
     end
   end
 
