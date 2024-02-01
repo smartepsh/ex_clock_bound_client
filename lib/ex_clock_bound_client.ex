@@ -28,6 +28,10 @@ defmodule ExClockBoundClient do
   @doc """
   Execute `function` and return bounds on execution time.
 
+  ## Options
+
+  - `exec_timeout` - The maximum time in milliseconds to wait for the function to complete. Default is 5000.
+
   ## Examples
 
       iex> ExClockBoundClient.timing(fn -> :timer.sleep(1000) end)
@@ -38,8 +42,45 @@ defmodule ExClockBoundClient do
            {{earliest_start :: DateTime.t(), latest_finish :: DateTime.t()},
             {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}}}
           | {:error, term}
-  def timing(func) do
-    GenServer.call(Server, {:timing, func})
+  def timing(func, opts \\ [exec_timeout: 5000]) do
+    with {:ok, {earliest_start_datetime, latest_start_datetime}} <- now(),
+         {:ok, _} <- run_function_in_task(func, opts[:exec_timeout]),
+         {:ok, {earliest_finish_datetime, latest_finish_datetime}} <- now() do
+      earliest_start = DateTime.to_unix(earliest_start_datetime, :nanosecond)
+      latest_start = DateTime.to_unix(latest_start_datetime, :nanosecond)
+      earliest_finish = DateTime.to_unix(earliest_finish_datetime, :nanosecond)
+      latest_finish = DateTime.to_unix(latest_finish_datetime, :nanosecond)
+
+      start_midpoint = (earliest_start + latest_start) / 2
+      end_midpoint = (earliest_finish + latest_finish) / 2
+
+      execution_time = end_midpoint - start_midpoint
+
+      error_rate = execution_time * config()[:frequency_error] / 1_000_000
+
+      min_execution_time = (execution_time - error_rate) |> ceil()
+      max_execution_time = (execution_time + error_rate) |> ceil()
+      earliest_start = DateTime.from_unix!(earliest_start, :nanosecond)
+      latest_finish = DateTime.from_unix!(latest_finish, :nanosecond)
+      {:ok, {{earliest_start, latest_finish}, {min_execution_time, max_execution_time}}}
+    end
+  end
+
+  defp run_function_in_task(func, timeout) do
+    try do
+      task =
+        Task.async(fn ->
+          try do
+            func.()
+          rescue
+            exception -> {:error, :raise, inspect(exception)}
+          end
+        end)
+
+      {:ok, Task.await(task, timeout)}
+    catch
+      :exit, {:timeout, _} -> {:error, :timeout}
+    end
   end
 
   @doc """

@@ -36,7 +36,7 @@ config :ex_clock_bound_client,
   frequency_error: 1 # Setting clock frequency to 1ppm to match chrony
 ```
 
-### Usage
+### APIs
 
 There are 5 APIs in this library, and additional `deviation/0` are added compared to the [official client](https://github.com/aws/clock-bound/tree/main/clock-bound-c).
 
