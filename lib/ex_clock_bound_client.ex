@@ -5,8 +5,8 @@ defmodule ExClockBoundClient do
     GenServer.call(Server, :now)
   end
 
-  def timing do
-    GenServer.call(Server, :timing)
+  def timing(func) do
+    GenServer.call(Server, {:timing, func})
   end
 
   def deviation do
@@ -15,13 +15,13 @@ defmodule ExClockBoundClient do
 
   def before?(datetime) do
     with {:ok, datetime} <- normalize_datetime(datetime) do
-      GenServer.call(Server, {:before?, [datetime]})
+      GenServer.call(Server, {:before?, datetime})
     end
   end
 
   def after?(datetime) do
     with {:ok, datetime} <- normalize_datetime(datetime) do
-      GenServer.call(Server, {:after?, [datetime]})
+      GenServer.call(Server, {:after?, datetime})
     end
   end
 
