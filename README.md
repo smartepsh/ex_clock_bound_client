@@ -41,7 +41,7 @@ config :ex_clock_bound_client,
 There are 5 APIs in this library, and additional `deviation/0` are added compared to the [official client](https://github.com/aws/clock-bound/tree/main/clock-bound-c).
 
 - `ExCloudBoundClient.now/0`
-- `ExCloudBoundClient.timing/0`
+- `ExCloudBoundClient.timing/1`
 - `ExCloudBoundClient.deviation/0`
 - `ExCloudBoundClient.before?/1`
 - `ExCloudBoundClient.after?/1`

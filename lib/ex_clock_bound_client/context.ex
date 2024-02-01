@@ -43,11 +43,12 @@ defmodule ExClockBoundClient.Context do
     end
   end
 
-  def timing(opts) do
+  def timing(func, opts) do
     request_data = <<1, 1, 0, 0>>
 
     with {:ok, <<1, 1, 0, 0, earliest_start::binary-size(8), latest_start::binary-size(8)>>} <-
            request(request_data, 20, opts),
+         _ <- func.(),
          {:ok, <<1, 1, 0, 0, earliest_finish::binary-size(8), latest_finish::binary-size(8)>>} <-
            request(request_data, 20, opts) do
       earliest_start = :binary.decode_unsigned(earliest_start)

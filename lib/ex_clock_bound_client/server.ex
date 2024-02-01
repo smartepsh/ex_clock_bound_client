@@ -33,5 +33,10 @@ defmodule ExClockBoundClient.Server do
   end
 
   @impl GenServer
+  def handle_call({action, param}, from, state) when is_atom(action) do
+    handle_call({action, [param]}, from, state)
+  end
+
+  @impl GenServer
   def terminate(_reason, state), do: Context.clear(state)
 end
