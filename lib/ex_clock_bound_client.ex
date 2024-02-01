@@ -28,6 +28,10 @@ defmodule ExClockBoundClient do
   @doc """
   Execute `function` and return bounds on execution time.
 
+  If the function execute correctly, it will return `{:ok, {time_bounds, execute_range}, result}` tuple.
+
+  **Attention:** If the function raises or throws something, it will be treated as normal. And the result will be {:raise, inspect(exception)} or {:throw, inspect(anything)} .
+
   ## Options
 
   - `exec_timeout` - The maximum time in milliseconds to wait for the function to complete. Default is 5000.
@@ -35,23 +39,23 @@ defmodule ExClockBoundClient do
   ## Examples
 
       iex> ExClockBoundClient.timing(fn -> :timer.sleep(1000) end)
-      {:ok, {{~U[2024-02-01 11:14:57.656524Z], ~U[2024-02-01 11:14:57.706487Z]}, {1011, 1033}}}
+      {:ok, {{~U[2024-02-01 11:14:57.656524Z], ~U[2024-02-01 11:14:57.706487Z]}, {1011, 1033}}, :ok}
   """
   @spec timing(function()) ::
           {:ok,
            {{earliest_start :: DateTime.t(), latest_finish :: DateTime.t()},
-            {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}}}
+            {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}},
+           result :: any}
           | {:error, :clock_bound_server_error | :timeout}
-          | {:error, :raise | :throw, inspection :: String.t()}
   @spec timing(function(), opts :: keyword) ::
           {:ok,
            {{earliest_start :: DateTime.t(), latest_finish :: DateTime.t()},
-            {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}}}
+            {min_execution_time :: non_neg_integer, max_execution_time :: non_neg_integer}},
+           result :: any}
           | {:error, :clock_bound_server_error | :timeout}
-          | {:error, :raise | :throw, inspection :: String.t()}
   def timing(func, opts \\ [exec_timeout: 5000]) do
     with {:ok, {earliest_start_datetime, latest_start_datetime}} <- now(),
-         {:ok, _} <- run_function_in_task(func, opts[:exec_timeout]),
+         {:ok, result} <- run_function_in_task(func, opts[:exec_timeout]),
          {:ok, {earliest_finish_datetime, latest_finish_datetime}} <- now() do
       earliest_start = DateTime.to_unix(earliest_start_datetime, :nanosecond)
       latest_start = DateTime.to_unix(latest_start_datetime, :nanosecond)
@@ -69,7 +73,7 @@ defmodule ExClockBoundClient do
       max_execution_time = (execution_time + error_rate) |> ceil()
       earliest_start = DateTime.from_unix!(earliest_start, :nanosecond)
       latest_finish = DateTime.from_unix!(latest_finish, :nanosecond)
-      {:ok, {{earliest_start, latest_finish}, {min_execution_time, max_execution_time}}}
+      {:ok, {{earliest_start, latest_finish}, {min_execution_time, max_execution_time}}, result}
     end
   end
 
@@ -80,9 +84,9 @@ defmodule ExClockBoundClient do
           try do
             func.()
           rescue
-            exception -> {:error, :raise, inspect(exception)}
+            exception -> {:ok, {:raise, inspect(exception)}}
           catch
-            anything -> {:error, :throw, inspect(anything)}
+            anything -> {:ok, {:throw, inspect(anything)}}
           end
         end)
 
